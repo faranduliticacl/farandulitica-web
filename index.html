@@ -1,4 +1,5 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Farandulítica · Política y farándula política</title><meta name="description" content="Política y farándula política, tu dosis diaria a la vena. Sátira y comentario sobre hechos publicados por medios chilenos."><meta property="og:title" content="Farandulítica"><meta property="og:description" content="Política y farándula política, tu dosis diaria a la vena."><meta property="og:type" content="website"><meta name="theme-color" content="#C8105F"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2212%22 fill=%22%23C8105F%22/%3E%3Ctext x=%2232%22 y=%2246%22 font-size=%2240%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Georgia%22 font-weight=%22bold%22%3EF%3C/text%3E%3C/svg%3E"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Farandulítica</title><meta name="description" content="Política y farándula política chilena: resumen del día y notas satíricas con fuente enlazada.">
+</head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -385,25 +386,6 @@ aside h3{font-family:var(--f-display);font-weight:400;font-size:22px;margin:0 0 
 </div>
 
 <script>
-/* Adaptador para el sitio público: lee los JSON de /data en vez de la base de claude.ai */
-(function(){
-  const bust=()=>"?v="+Math.floor(Date.now()/300000);
-  const get=async f=>{try{const r=await fetch(f+".json"+bust(),{cache:"no-store"});if(!r.ok)return null;return await r.json()}catch(e){return null}};
-  function query(name){
-    return {orderBy(){return this},limit(){return this},
-      onSnapshot(cb,err){
-        const load=async()=>{const arr=await get(name);if(arr===null&&name!=="anuncios"){err&&err();return}
-          cb({docs:(arr||[]).map(d=>({id:d.id,data:()=>d,exists:true}))})};
-        load();const t=setInterval(load,600000);return()=>clearInterval(t)}};
-  }
-  const db={collection:query,
-    doc(path){return{
-      onSnapshot(cb){if(path==="meta/estado"){const load=async()=>{const m=await get("meta");if(m)cb({exists:true,data:()=>m})};load();setInterval(load,600000)}return()=>{}},
-      get:async()=>({exists:false}),set:async()=>{},update:async()=>{},delete:async()=>{}}}};
-  window.claude={use:async n=>{if(n==="db")return db;if(n==="user")return{canEdit:async()=>false};throw new Error("no disponible")}};
-})();
-</script>
-<script>
 (function(){
   const CATS=["Todas","Romance","Tele","Redes","Look","Show","Pelea","Cuña","Ética"];
   let notas=[], cat="Todas", q="", meta=null, openIG=null, downloads=null, assets=null, mcp=null, editor=false, dbRef=null, igBusy=new Set();
@@ -700,26 +682,23 @@ aside h3{font-family:var(--f-display);font-weight:400;font-size:22px;margin:0 0 
   });
 
   chips();
+  /* ---------- Carga estática (Cloudflare Pages): lee data/*.json ---------- */
   (async()=>{
-    if(!window.claude||!window.claude.use){return}
-    try{downloads=await window.claude.use("downloads")}catch(_){downloads=null}
-    let db=null;try{db=await window.claude.use("db")}catch(_){}
-    if(!db){$("#feed").innerHTML=`<div class="empty"><h2>Inicia sesión para leer</h2><p>Las notas se cargan desde la base del sitio y requieren una sesión de claude.ai.</p></div>`;$("#res-t").innerHTML=`<small>Resumen del día</small>Inicia sesión para leer`;return}
-    dbRef=db;
-    db.collection("resumenes").orderBy("publicado","desc").limit(60).onSnapshot(s=>{
-      resList=s.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.estado||r.estado==="publicada");
-      if(resSel&&!resList.some(r=>r.id===resSel))resSel=null;
+    enableTracking(false);
+    const get=async p=>{const r=await fetch(p+"?v="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error(p);return r.json()};
+    try{
+      const rs=await get("resumenes.json");
+      resList=rs.filter(r=>!r.estado||r.estado==="publicada").sort((a,b)=>String(b.publicado||"").localeCompare(String(a.publicado||""))).slice(0,60);
       renderRes();
-    },()=>{$("#res-t").innerHTML=`<small>Resumen del día</small>No pudimos cargar el resumen`});
-    db.collection("notas").orderBy("publicado","desc").limit(300).onSnapshot(s=>{
-      notas=s.docs.map(d=>({id:d.id,...d.data()})).filter(n=>!n.estado||n.estado==="publicada")
+    }catch(_){$("#res-t").innerHTML=`<small>Resumen del día</small>No pudimos cargar el resumen`}
+    try{
+      const ns=await get("notas.json");
+      notas=ns.filter(n=>!n.estado||n.estado==="publicada")
         .sort((a,b)=>String(b.fecha_hecho||b.publicado||"").localeCompare(String(a.fecha_hecho||a.publicado||""))||String(b.publicado||"").localeCompare(String(a.publicado||"")));
-      if(!notas.length){$("#feed").innerHTML=`<div class="empty"><h2>Sin notas todavía</h2><p>La primera ronda automática llenará esta portada. Vuelve en unas horas.</p></div>`}
+      if(!notas.length){$("#feed").innerHTML=`<div class="empty"><h2>Sin notas todavía</h2><p>Vuelve en unas horas.</p></div>`}
       render();rank();
-    },()=>{$("#feed").innerHTML=`<div class="empty"><h2>No pudimos cargar las notas</h2><p>Recarga la página en un momento.</p></div>`});
-    db.doc("meta/estado").onSnapshot(s=>{if(s.exists){meta=s.data();$("#upd").textContent="Actualizado "+fmtDT(meta.ultima_ronda)}});
-    db.collection("anuncios").limit(100).onSnapshot(s=>{anuncios=s.docs.map(d=>({id:d.id,...d.data()}));renderAds();if(editor)drawAdList()},()=>{});
-    setupMesa(db);
+    }catch(_){$("#feed").innerHTML=`<div class="empty"><h2>No pudimos cargar las notas</h2><p>Recarga la página en un momento.</p></div>`}
+    try{meta=await get("meta.json");if(meta&&meta.ultima_ronda)$("#upd").textContent="Actualizado "+fmtDT(meta.ultima_ronda)}catch(_){}
   })();
 
   /* ---------- Panel de lectura (editores) ---------- */
