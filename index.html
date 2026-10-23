@@ -388,7 +388,7 @@ aside h3{font-family:var(--f-display);font-weight:400;font-size:22px;margin:0 0 
 /* Adaptador para el sitio público: lee los JSON de /data en vez de la base de claude.ai */
 (function(){
   const bust=()=>"?v="+Math.floor(Date.now()/300000);
-  const get=async f=>{try{const r=await fetch("data/"+f+".json"+bust(),{cache:"no-store"});if(!r.ok)return null;return await r.json()}catch(e){return null}};
+  const get=async f=>{try{const r=await fetch(f+".json"+bust(),{cache:"no-store"});if(!r.ok)return null;return await r.json()}catch(e){return null}};
   function query(name){
     return {orderBy(){return this},limit(){return this},
       onSnapshot(cb,err){
